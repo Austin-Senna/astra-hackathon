@@ -186,6 +186,30 @@ Key audio by committed text, speaker/voice version, language, and synthesis sett
 
 This supports a rich harness without making a tool call equivalent to permission to change any backend field.
 
+## First Delivery: Social Actions And Expressive Feedback
+
+The existing engine cannot resolve an action such as kissing the sentinel into a changed relationship or emotional state. Its DM prompt disallows claiming unsupported actions happened, and its available command schema lacks a social-outcome operation. More creative prompting alone cannot fix that missing state transition.
+
+The first delivery should support open-ended social intentions through a generic validated outcome, not add a hardcoded engine verb for every kiss, hug, apology, compliment, or threat. The AI interprets an attempt and chooses a context-sensitive NPC response. The engine validates physical reach, participants, authority, and bounded effects, then persists the chosen outcome atomically. Deterministic replay reuses that outcome; it never asks the model to decide it again.
+
+An NPC can reciprocate, recoil, become confused, or respond neutrally. A valid attempt with an unfavorable response is a game outcome, not an unsupported-command error. The player cannot dictate another human player's feelings or claim guaranteed NPC affection by wording the prompt as a completed result.
+
+Initial social effects: change the targeted NPC's emotion, apply a bounded relationship delta toward the acting character, record an attributed memory, optionally change an allowed NPC intent, and commit dialogue. Preserve existing inventory/health/ability rules. Contact gestures require adjacency; non-contact gestures or speech use an explicit supported reach. One resolved social attempt advances one simulation step; its speech, emoji, sound, and VFX do not cause additional hunger/fire/combat steps. Repeated positive social gestures are rate-limited in simulation state so they cannot farm unlimited relationship points.
+
+Social memory records include actor/target attribution and an event ID. Future conversations may use the relevant jointly witnessed history without exposing memories involving other players. A reload or reconnect must retain the NPC's mood, relationship, and recollection even after the transient feedback ends.
+
+### Presentation Primitives
+
+- `emote`: a registered semantic emoji/emote such as affection, surprise, annoyance, confusion, sadness, or laughter; an entity anchor; bounded duration; and audience. The renderer can use an emoji glyph, icon asset, or billboard.
+- `sfx`: a registered sound or approved synthesis preset, anchor, bounded gain, and audience. No arbitrary external URL supplied by a model.
+- `vfx`: a registered effect preset, anchor, bounded color/intensity/duration, and audience. Examples include blush, hearts, impact, sparks, glow, and a shockwave. No generated code or shader execution.
+
+These are structured committed presentation events, not emoji characters buried in narration. They do not independently change health, affection, or any other mechanic. A heart visual alone is not evidence that affection increased; the persisted outcome supplies that fact. Presets are replaceable presentation data, not renderer-specific scene objects inside the backend.
+
+Clients play fresh cues once, honor mute/reduced-motion/accessibility preferences, and discard expired cues during reconnect. State snapshots remain authoritative. Actor-private thoughts and their associated cues must not be broadcast to other players. Bundled emoji/sound/particle recipes need no generative-model request, so routine reactions can appear as soon as the social result commits.
+
+The sentinel acceptance scene must show an actual persisted NPC reaction, attributed memory, a suitable emote, sound, and VFX; speaking again must reflect the interaction. The backend produces the validated outcome/events. Visible rendering and playback must be integrated with the separate UI agent rather than claimed complete from an event payload alone.
+
 ## Fast Asset Pipeline
 
 Gameplay must not wait for novel artwork. Our observed Claude pixel-art smoke took 22 seconds; this is evidence that cold generation is not instantaneous, not a latency guarantee.
@@ -225,6 +249,7 @@ Coordinate additive contract changes with the separate UI/SDK agent. Supply fixt
 
 ## Delivery Boundaries
 
+0. First working slice: social outcomes, attributed NPC memories, and emoji/SFX/VFX event primitives. This addresses the currently blocked player interaction before the broader authoring system is delivered.
 1. Definition registry, authoring validation, persistence, and compatibility fixtures.
 2. Bounded effect interpreter and reactive trigger resolution; port relevant existing fire/water behavior to the same rule path to avoid double application.
 3. AI generation/DM authoring integration and structured rejection/repair.
@@ -248,3 +273,5 @@ The implementation plan will name exact files and tests after review of this des
 - Reject a late demon asset attachment after reversion and preserve historical dialogue speaker versions without mutating the current profile.
 - Exercise tool-loop budgets, unknown tools, typed dependency handles, duplicate calls, transactional media outbox recovery, and unavailable TTS/image providers.
 - Prove profile updates cannot smuggle mechanical or ownership changes, story tools preserve the primary-goal policy, private speech is scoped, and malformed SVG cannot execute code or make network requests.
+- Resolve kissing the sentinel as a valid context-sensitive social attempt; persist a relevant NPC reaction and memory; retain them across reload; recall the interaction later without forcing reciprocation.
+- Verify emote/SFX/VFX do not mutate mechanics, add simulation ticks, leak private reactions, or replay stale effects on reconnect. Verify positive-gesture farming limits and exact replay of a previously resolved model outcome.

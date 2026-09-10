@@ -14,6 +14,8 @@ User approved AI-authored data-defined mechanics above trusted primitives, and a
 
 Latest requested additions: player form transformations must synchronize the in-world model, portrait, profile icon, and abilities; build a controlled AI tool harness with TTS, SVG/image requests, ability grants, typed character/profile updates, and story-objective creation. The expanded design now covers versioned appearance bundles, stale-art rejection after reversion, allowed tool schemas, transactional side-effect outbox, local/headless tool dispatch without shell access, and explicit provider availability. These remain specifications, not shipped tools.
 
+Latest concrete pain point: 'I kiss the sentinel' has no supported social state transition. User also requested emoji/emote, SFX, and VFX primitives. First-slice plan: `docs/superpowers/plans/2026-09-10-social-reactions-first-slice.md`. It proposes generic social outcomes with persisted NPC mood/relationship/attributed memory plus separate typed presentation cues, not one hardcoded verb per gesture. This plan is for implementation review; no social command or cue renderer has been added yet.
+
 ## Implemented
 
 - Shared Zod contracts with action-specific required fields, world/entity state, events, assets, encounters, session credentials, and synchronization cursors.
