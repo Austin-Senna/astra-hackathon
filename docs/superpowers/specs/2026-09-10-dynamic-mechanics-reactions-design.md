@@ -12,6 +12,7 @@ Examples to support:
 - An existing fire with no water reaction can gain an extinguishing reaction.
 - A newly introduced wind effect can spread fire downwind.
 - A chicken entering fire can become a roasted-chicken item, with a newly requested visual if none exists.
+- A player transforms into a demon form: the in-world representation, portrait, profile icon, and allowed form abilities update coherently without replacing the player's identity.
 
 These examples are adventure rules, not universal physical or biological claims. Different worlds may define different reactions.
 
@@ -121,6 +122,70 @@ Every transform declares inventory handling: preserve only when compatible, othe
 
 Validate the output definition before consuming or transforming the input. A missing visual is allowed; a missing gameplay definition is not. Repeated delivery of the same action/reaction cannot produce duplicate roasted items.
 
+## Character Forms And Visual Identity
+
+Character form changes are distinct from destructive item/entity conversion. An authorized ability or story event may apply a validated form to a player; an ordinary unprivileged environmental transform cannot turn a player into an unrelated item or remove their membership.
+
+Keep the character's stable actor ID, owner, inventory, memories, relationships, and progression. A form defines explicit additions/modifiers, appearance, optional voice preset, duration, and reversion policy. Do not overwrite all abilities: track which grants belong to the form, so reverting removes those grants without deleting abilities earned elsewhere. Only validated mechanics change collision, targeting, or stats; a visually larger mesh cannot silently change simulation rules.
+
+One appearance bundle links a versioned identity description and reference assets to the in-world sprite/model/recipe, dialogue portrait, profile icon, and optional voice profile. Every UI surface resolves the same active appearance version. The appearance description carries recognizable character traits and art direction so separate generation jobs do not independently invent different characters.
+
+On transformation, commit the new form and a complete compatible fallback bundle together. A demon model/proxy must not coexist with an accidentally retained human portrait due to unrelated component state. Use cached demon-form variants or approved transformation recipes first; schedule missing variants in the background. Publish quality upgrades as a coherent bundle for the renderer's required surfaces. A native generated 3D model is optional when a compatible existing-model recipe or billboard satisfies the immediate presentation tier.
+
+Persist bundle/version provenance and keep the previous form for explicit reversion. If demon artwork completes after the character has returned to human form, retain it in cache but do not activate it. Reject stale attachment requests using the character's expected appearance version. Old dialogue events can retain their original speaker appearance/voice version; present-day profile/world views use the current version.
+
+## Controlled DM Tool Harness
+
+The AI should operate a small, explicit server tool registry instead of a growing prompt that loosely describes every side effect. Each tool has a versioned schema, purpose, preconditions, permission scope, cost/latency class, deterministic validation, and structured result/error. The model adapter remains replaceable; game rules do not depend on Claude-specific tool syntax.
+
+Suggested public tool surface:
+
+| Tool | Responsibility and boundary |
+| --- | --- |
+| `readWorld` / `inspectEntity` | Read authorized actor-visible state and affordances, with a revision. No generic secret-bearing database access. |
+| `defineEntity` / `defineAbility` / `defineReaction` | Propose versioned data definitions using available primitives. Return validated handles or precise rejection. |
+| `performAction` | Submit a typed intention through the deterministic engine, never an arbitrary state patch. |
+| `addAbilities` | Grant installed abilities when the story/progression/form policy permits; no unrestricted player self-grants. |
+| `transformCharacter` | Apply/revert a validated form and its coherent appearance bundle. Preserve actor identity and persistent history. |
+| `updateCharacter` | Update explicitly allowed profile fields through typed sections, not arbitrary property paths. Mechanical changes use their dedicated commands. |
+| `createStoryQuest` | Propose a validated story objective/beat with references and completion conditions. Preserve one clear primary goal; additional content does not silently replace it or multiply mandatory quests. |
+| `narrate` / `talk` / `think` | Commit appropriately scoped dialogue referring to real events. Thoughts remain actor-private. |
+| `tts` | Request narration/dialogue audio for an authorized committed dialogue ID, with a speaker/voice version. Does not establish game facts or replay audio globally on reconnect. |
+| `createSvg` / `createImage` | Request visual artifacts with an appearance/asset version, style, purpose, references, and fallback. Return a cached asset or persistent job handle, not a world mutation. |
+| `attachAppearance` | Atomically attach a validated visual bundle to the expected character/form version. Cannot activate stale artifacts. |
+| `getJob` | Inspect an authorized artifact job without exposing another world's hidden content. |
+
+The exact wire schemas and naming will be fixed in the implementation plan. The important distinction is between authoring content, executing mechanics, committing narration, and requesting media. A tool such as `updateCharacter(section="profile", ...)` cannot mutate health, abilities, inventory, ownership, or credentials through a generic object patch.
+
+### Execution And Transactions
+
+Claude Code currently runs with its own shell/filesystem tools disabled. Keep that restriction. Initially the harness can receive structured tool-call batches from the existing headless transport and dispatch only registered server operations. It does not need to expose Bash, filesystem editing, or arbitrary MCP tools to the DM. A later native tool-calling provider can use the same registry.
+
+Use a bounded plan/execute/result loop. Independent artifact requests may run concurrently within resource limits; dependent operations use typed handles from earlier results. Limit tool rounds, calls, depth, wall time, and cost. Stale revisions, missing definitions, illegal actions, unavailable media providers, and validation failures return structured errors that allow targeted repair.
+
+Separate read-only tools, transactional world changes, and asynchronous external side effects. Validate and simulate world changes before commit. Write an outbox record for associated media work in the same database transaction; workers perform that work afterward. Failed world batches must not emit success narration, TTS, or leaked artifact attachments. Failed media jobs must not undo an already valid world change.
+
+Tool calls carry idempotency keys. Retried commands cannot grant an ability twice, create duplicate quests, or enqueue duplicate image/audio generation. Record tool arguments, authorized actor, definition versions, validation/execution results, committed event IDs, job IDs, and timing for debugging. Do not log credentials or private model reasoning. Scope persisted traces and their content as carefully as world state.
+
+### Voice And SVG Boundaries
+
+`tts` is a harness capability backed by an adapter, not something Claude Code itself can synthesize. The first no-key path emits an explicitly identified browser-speech request for an authorized committed line; the client checks local availability and voice preferences. This does not promise identical voices across devices. A shared server-generated voice asset requires a separately configured speech provider and is an optional later adapter. Absent capability returns an explicit unavailable status while text dialogue still works. Use configured synthetic/licensed voices; do not infer real-person voice cloning from a profile image or character name.
+
+Key audio by committed text, speaker/voice version, language, and synthesis settings. Queue playback by dialogue event, deduplicate IDs, and scope private thoughts to their intended actor. A voice failure cannot make the dialogue disappear. A narrator voice and an NPC voice are roles/presets, not separate sources of authoritative story state.
+
+`createSvg` should accept a bounded scene description compiled by a trusted renderer for simple icons, portraits/proxies, and effects. If a provider emits SVG markup, validate a strict allowlist and rasterize in an isolated, resource-limited process; disallow scripts, foreign content, external fetches, event handlers, and unbounded structures. Never insert raw model SVG into the application DOM. Complex art uses `createImage`; choosing SVG does not make generation inherently instantaneous or higher quality.
+
+### Demon Transformation Example
+
+1. Install a validated demon form and any new abilities/reactions it references.
+2. Check that the actor can acquire that form under the world's current rules.
+3. Apply the form, its gameplay grants/modifiers, and the matching model/portrait/icon fallback bundle in one commit.
+4. Emit a transformation event consumed by every connected client's world, profile, and dialogue surfaces.
+5. Request missing visual variants and optional committed speech audio in the background, sharing one appearance description/reference set.
+6. Attach a completed quality-tier bundle only if the intended form/version is still current. Reversion follows the same synchronized path.
+
+This supports a rich harness without making a tool call equivalent to permission to change any backend field.
+
 ## Fast Asset Pipeline
 
 Gameplay must not wait for novel artwork. Our observed Claude pixel-art smoke took 22 seconds; this is evidence that cold generation is not instantaneous, not a latency guarantee.
@@ -164,6 +229,7 @@ Coordinate additive contract changes with the separate UI/SDK agent. Supply fixt
 2. Bounded effect interpreter and reactive trigger resolution; port relevant existing fire/water behavior to the same rule path to avoid double application.
 3. AI generation/DM authoring integration and structured rejection/repair.
 4. Asset deduplication, recipes, prewarming, priority scheduling, and renderer handoff.
+5. Controlled tool registry/orchestration, coherent character forms, profile updates, and optional speech adapters. Design the registry interfaces first, then deliver these capabilities incrementally through the same validation/transaction paths.
 
 The implementation plan will name exact files and tests after review of this design. No runtime plugin execution, autonomous source-code deployment, full fluid/combustion physics, or new native 3D generation provider is included in the initial extension.
 
@@ -178,3 +244,7 @@ The implementation plan will name exact files and tests after review of this des
 - Verify deterministic precedence for simultaneous water/wind, duplicate event delivery, timed triggers, restart recovery, and concurrent rule updates.
 - Prove cache deduplication, visible-job priority, failure fallback, and no DM starvation by artwork jobs.
 - Check two-client synchronization, actor-specific visibility, definition/asset version recovery, and safe renderer fallbacks.
+- Transform a player into demon form and revert it: world model, portrait, and icon stay on the same appearance version; inventory, actor identity, and memories survive; form-granted abilities revert correctly.
+- Reject a late demon asset attachment after reversion and preserve historical dialogue speaker versions without mutating the current profile.
+- Exercise tool-loop budgets, unknown tools, typed dependency handles, duplicate calls, transactional media outbox recovery, and unavailable TTS/image providers.
+- Prove profile updates cannot smuggle mechanical or ownership changes, story tools preserve the primary-goal policy, private speech is scoped, and malformed SVG cannot execute code or make network requests.

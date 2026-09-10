@@ -12,6 +12,8 @@
 
 User approved AI-authored data-defined mechanics above trusted primitives, and added modifiable reactions: fire/water extinguishing, wind spreading fire, chicken transforming to roasted chicken, and fast new output visuals. Expanded design: `docs/superpowers/specs/2026-09-10-dynamic-mechanics-reactions-design.md`. This is a design for review, not implemented functionality. Next step after design review is the implementation plan; coordinate contract changes with the separate UI/SDK agent.
 
+Latest requested additions: player form transformations must synchronize the in-world model, portrait, profile icon, and abilities; build a controlled AI tool harness with TTS, SVG/image requests, ability grants, typed character/profile updates, and story-objective creation. The expanded design now covers versioned appearance bundles, stale-art rejection after reversion, allowed tool schemas, transactional side-effect outbox, local/headless tool dispatch without shell access, and explicit provider availability. These remain specifications, not shipped tools.
+
 ## Implemented
 
 - Shared Zod contracts with action-specific required fields, world/entity state, events, assets, encounters, session credentials, and synchronization cursors.
