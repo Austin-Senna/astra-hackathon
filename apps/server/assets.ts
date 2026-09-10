@@ -5,6 +5,8 @@ import type { AssetDefinition, WorldState } from '../../packages/contracts';
 import { assetCatalog } from '../../packages/assets/catalog';
 import type { AssetJob, WorldRepository } from './repository';
 
+export const isSculpture = (assetId: string) => assetId.startsWith('form-') || assetId.startsWith('sculpt-');
+
 export class AssetQueue {
   private running = false;
   private stopped = false;
@@ -17,10 +19,12 @@ export class AssetQueue {
   stop() { this.stopped = true; }
   enqueue(world: WorldState) {
     const existing = new Set([...assetCatalog.map(a=>a.id),...this.repository.assetJobs(world.id).map(j=>j.assetId)]);
-    const missing = Object.values(world.entities).filter(entity=>!existing.has(entity.assetId)).slice(0,2);
+    const missing = Object.values(world.entities).filter(entity=>!entity.statuses.includes('hidden') && !existing.has(entity.assetId));
     for(const entity of missing) {
+      if (existing.has(entity.assetId)) continue;
       existing.add(entity.assetId);
-      this.repository.putAssetJob({id:randomUUID(),worldId:world.id,assetId:entity.assetId,name:entity.name,status:'pending',url:null,error:null});
+      const name = isSculpture(entity.assetId) ? `${entity.tags.find(tag => tag.startsWith('form:'))?.slice(5) ?? entity.name}: ${entity.description}`.slice(0, 1600) : entity.name;
+      this.repository.putAssetJob({id:randomUUID(),worldId:world.id,assetId:entity.assetId,name,status:'pending',url:null,error:null});
     }
     void this.drain();
   }

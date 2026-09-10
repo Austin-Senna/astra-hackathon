@@ -63,7 +63,7 @@ export function applyCommandBatch(input: WorldState, actorId: string, commands: 
       }
     };
     const transfer = (item: Entity, recipient: Entity | null) => {
-      if (recipient && recipient.inventory.length >= 8) reject('INVENTORY_FULL', 'There is room for eight items.');
+      if (recipient && recipient.inventory.length >= (w.sandbox?.enabled ? 128 : 8)) reject('INVENTORY_FULL', 'The inventory storage limit has been reached.');
       if (item.holderId) w.entities[item.holderId].inventory = w.entities[item.holderId].inventory.filter(id => id !== item.id);
       item.holderId = recipient?.id ?? null; item.location = recipient ? null : structuredClone(actor.location);
       if (recipient) recipient.inventory.push(item.id);
@@ -111,6 +111,7 @@ export function applyCommandBatch(input: WorldState, actorId: string, commands: 
           const next = { ...actor.location!, x: intent.x!, y: intent.y!, mapId: intent.mapId ?? actor.location!.mapId };
           if (distance(actor.location, next) !== 1) reject('INVALID_MOVE', 'Move one adjacent tile at a time.');
           if (!canStand(w, next, actorId)) reject('BLOCKED', 'That way is blocked.');
+          actor.facing = next.x > actor.location!.x ? 'east' : next.x < actor.location!.x ? 'west' : next.y > actor.location!.y ? 'south' : 'north';
           actor.location = next; const exit = w.maps[next.mapId].exits.find(e => e.x === next.x && e.y === next.y);
           if (exit) {
             const arrival = { ...next, mapId: exit.toMapId, x: exit.toX, y: exit.toY };
@@ -224,10 +225,13 @@ export function applyCommandBatch(input: WorldState, actorId: string, commands: 
           w.encounter.round++; w.encounter.turnActorId = actorId;
         }
       }
-      if (!active(actor) && w.actorIds.every(id => !active(w.entities[id]))) { w.status = 'lost'; finishEncounter('lost'); w.phase = 'ended'; speak('Your journey ends here. The house keeps your story.'); }
+      if (!active(actor) && w.actorIds.every(id => !active(w.entities[id]))) {
+        finishEncounter('lost');
+        if (!w.sandbox?.enabled) { w.status = 'lost'; w.phase = 'ended'; speak('Your journey ends here. The house keeps your story.'); }
+      }
       const objective = w.objective;
       const won = active(actor) && (objective.type === 'fact' ? !!objective.factId && actor.knowledge.includes(objective.factId) : objective.type === 'possess' ? !!objective.targetId && actor.inventory.includes(objective.targetId) : !!objective.mapId && actor.location?.mapId === objective.mapId);
-      if (won) { w.status = 'won'; w.phase = 'ended'; speak(w.memories.some(m => m.kind === 'help') ? 'You found what you came for. The kindness you left along the way will be remembered.' : 'You found what you came for. For the first time tonight, this place feels like somewhere you can leave in peace.'); emit('objective', w.goal); }
+      if (won && !w.sandbox?.enabled) { w.status = 'won'; w.phase = 'ended'; speak(w.memories.some(m => m.kind === 'help') ? 'You found what you came for. The kindness you left along the way will be remembered.' : 'You found what you came for. For the first time tonight, this place feels like somewhere you can leave in peace.'); emit('objective', w.goal); }
     }
     w.revision = revision;
     return { ok: true, world: w, events };
@@ -253,6 +257,10 @@ export function projectWorld(world: WorldState, actorId: string): WorldView {
   const witnessed = new Set((actor?.memories ?? []).map(m => m.eventId));
   view.dialogue = view.dialogue.filter(line => (line.kind !== 'thought' || line.speakerId === actorId) && (line.speakerId === actorId || witnessed.has(line.id)));
   view.actorIds = view.actorIds.filter(id => !!own(view.entities, id));
+  if (view.sandbox) {
+    view.sandbox.rules = view.sandbox.rules.filter(rule => !!own(view.maps, rule.mapId));
+    view.sandbox.forms = view.sandbox.forms.filter(form => !!own(view.entities, form.actorId));
+  }
   if (view.encounter && !own(view.maps, view.encounter.mapId)) view.encounter = null;
   return view;
 }
@@ -278,7 +286,7 @@ export function validateBlueprint(value: unknown): { ok: true; world: WorldState
     if ((e.location === null) === (e.holderId === null)) issue(`Entity ${id} must have exactly one location or holder.`);
     if (e.location && !tileOpen(w, e.location)) issue(`Entity ${id} has an invalid position.`);
     if (e.hp > e.maxHp) issue(`Entity ${id} health exceeds maximum.`);
-    if (e.inventory.length > 8 || new Set(e.inventory).size !== e.inventory.length) issue(`Entity ${id} has invalid inventory capacity or duplicates.`);
+    if (e.inventory.length > (w.sandbox?.enabled ? 128 : 8) || new Set(e.inventory).size !== e.inventory.length) issue(`Entity ${id} has invalid inventory capacity or duplicates.`);
     if (e.holderId && (!own(w.entities, e.holderId)?.inventory.includes(id) || e.kind !== 'item')) issue(`Entity ${id} has inconsistent ownership.`);
     for (const child of e.inventory) if (own(w.entities, child)?.holderId !== id) issue(`Entity ${id} inventory ownership mismatch.`);
     const seen = new Set([id]); let holder = e.holderId;

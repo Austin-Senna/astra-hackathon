@@ -1,11 +1,12 @@
 import { z } from 'zod';
+import { FacingSchema, PropertiesSchema, SandboxStateSchema } from './sandbox';
 
 const id = z.string().min(1).max(160);
 const text = z.string().max(12000);
 const integer = z.number().int();
 export const PositionSchema = z.object({ mapId: id, x: integer, y: integer, elevation: integer }).strict();
 export type Position = z.infer<typeof PositionSchema>;
-export const StatusSchema = z.enum(['wet', 'burning', 'asleep', 'afraid', 'dead', 'broken', 'open', 'locked', 'hidden']);
+export const StatusSchema = z.string().min(1).max(160);
 export type Status = z.infer<typeof StatusSchema>;
 export const MemorySchema = z.object({ eventId: id, text, kind: z.enum(['help', 'harm', 'discovery', 'promise', 'observation']) }).strict();
 export type Memory = z.infer<typeof MemorySchema>;
@@ -19,9 +20,10 @@ export const EntitySchema = z.object({
   emotion: text, traits: z.object({ kindness: z.number(), curiosity: z.number(), courage: z.number() }).strict(),
   relationships: z.record(z.string(), z.number()), knowledge: z.array(id), memories: z.array(MemorySchema),
   intent: z.enum(['idle', 'follow', 'guard', 'hostile', 'flee']), dialogue: z.array(text), interaction: InteractionSchema.nullable(),
+  facing: FacingSchema.optional(), properties: PropertiesSchema.optional(),
 }).strict();
 export type Entity = z.infer<typeof EntitySchema>;
-export const MapStateSchema = z.object({ id, name: text, description: text, width: integer.positive().max(128), height: integer.positive().max(128), tiles: z.array(z.string()), discovered: z.boolean(), ambience: text, exits: z.array(z.object({ x: integer, y: integer, toMapId: id, toX: integer, toY: integer }).strict()), palette: z.object({ floor: text, wall: text, accent: text }).strict() }).strict();
+export const MapStateSchema = z.object({ id, name: text, description: text, width: integer.positive().max(128), height: integer.positive().max(128), tiles: z.array(z.string()), tileStates: z.record(z.string(), z.string().max(160)).optional(), discovered: z.boolean(), ambience: text, exits: z.array(z.object({ x: integer, y: integer, toMapId: id, toX: integer, toY: integer }).strict()), palette: z.object({ floor: text, wall: text, accent: text }).strict() }).strict();
 export type MapState = z.infer<typeof MapStateSchema>;
 export const ObjectiveSchema = z.object({ type: z.enum(['fact', 'reach', 'possess']), targetId: id.nullable(), factId: id.nullable(), mapId: id.nullable() }).strict();
 export type Objective = z.infer<typeof ObjectiveSchema>;
@@ -29,7 +31,7 @@ export const DialogueLineSchema = z.object({ id, speakerId: id.nullable(), speak
 export type DialogueLine = z.infer<typeof DialogueLineSchema>;
 export const EncounterStateSchema = z.object({ id, mapId: id, participantIds: z.array(id), turnActorId: id, round: integer.positive(), status: z.enum(['active', 'won', 'fled', 'lost']) }).strict();
 export type EncounterState = z.infer<typeof EncounterStateSchema>;
-export const WorldStateSchema = z.object({ schemaVersion: z.literal(1), id, title: text, premise: text, goal: text, seed: integer, rng: integer, revision: integer.nonnegative(), tick: integer.nonnegative(), phase: z.enum(['exploring', 'dm', 'encounter', 'ended']), status: z.enum(['active', 'won', 'lost']), maps: z.record(z.string(), MapStateSchema), entities: z.record(z.string(), EntitySchema), actorIds: z.array(id), objective: ObjectiveSchema, facts: z.record(z.string(), text), knownFacts: z.array(id), secrets: z.record(z.string(), text), memories: z.array(MemorySchema), dialogue: z.array(DialogueLineSchema), encounter: EncounterStateSchema.nullable(), style: z.object({ accent: text, ambience: text }).strict() }).strict();
+export const WorldStateSchema = z.object({ schemaVersion: z.literal(1), id, title: text, premise: text, goal: text, seed: integer, rng: integer, revision: integer.nonnegative(), tick: integer.nonnegative(), phase: z.enum(['exploring', 'dm', 'encounter', 'ended']), status: z.enum(['active', 'won', 'lost']), maps: z.record(z.string(), MapStateSchema), entities: z.record(z.string(), EntitySchema), actorIds: z.array(id), objective: ObjectiveSchema, facts: z.record(z.string(), text), knownFacts: z.array(id), secrets: z.record(z.string(), text), memories: z.array(MemorySchema), dialogue: z.array(DialogueLineSchema), encounter: EncounterStateSchema.nullable(), style: z.object({ accent: text, ambience: text }).strict(), sandbox: SandboxStateSchema.optional() }).strict();
 export type WorldState = z.infer<typeof WorldStateSchema>;
 export const WorldBlueprintSchema = WorldStateSchema;
 export type WorldBlueprint = WorldState;

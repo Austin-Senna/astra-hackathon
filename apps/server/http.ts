@@ -10,7 +10,7 @@ import { GameService, visibleEvents } from './service';
 import type { ModelProvider } from './model';
 import type { AssetQueue } from './assets';
 
-const CreateSchema = z.object({brief:AdventureBriefSchema,mode:z.enum(['live','demo']),preset:z.enum(['house','dungeon']).default('house')}).strict();
+const CreateSchema = z.object({brief:AdventureBriefSchema,mode:z.enum(['live','demo']),preset:z.enum(['sandbox','house','dungeon']).default('sandbox')}).strict();
 const ChatSchema = z.object({brief:AdventureBriefSchema,message:z.string().min(1).max(2000)}).strict();
 const SubscribeSchema = z.object({type:z.literal('subscribe'),worldId:z.string().max(160),token:z.string().max(160),after:z.number().int().nonnegative().default(0)}).strict();
 async function body(request: IncomingMessage): Promise<unknown> {

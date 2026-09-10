@@ -6,6 +6,8 @@ import { createDungeonWorld, createHouseWorld } from '../../packages/engine/fixt
 import { assetCatalog } from '../../packages/assets/catalog';
 import { generateAdventure, type StructuredModel } from './generation';
 import type { CommitResult, Membership, WorldRepository } from './repository';
+import { createSandboxWorld } from '../../packages/engine/sandbox-fixture';
+import { resolveSandboxPrompt } from './sandbox-dm';
 
 export const DMRequestSchema = z.object({ requestId: z.string().min(1).max(160), expectedRevision: z.number().int().nonnegative(), text: z.string().min(1).max(2000), targetId: z.string().max(160).optional() }).strict();
 export const RestoreRequestSchema = DMRequestSchema.omit({ text: true, targetId: true });
@@ -58,8 +60,17 @@ export class GameService {
     const result = await this.model.structured(ChatSchema, 'You are an imaginative, concise RPG dungeon master helping create a playable four-location adventure with one goal. Ask at most one evocative question. Respect the player setting, tone, protagonist, and agency. Update the brief fields with what is established. Suggest 2-3 short possible answers. No tools or implementation discussion.',JSON.stringify({brief,message}));
     return { brief:{premise:result.premise,tone:result.tone,protagonist:result.protagonist,messages:[...brief.messages,{role:'user' as const,content:message},{role:'assistant' as const,content:result.reply}].slice(-20)},reply:result.reply,suggestions:result.suggestions };
   }
-  async create(brief: AdventureBrief, mode: 'live'|'demo', preset: 'house'|'dungeon') {
+  async create(brief: AdventureBrief, mode: 'live'|'demo', preset: 'house'|'dungeon'|'sandbox' = 'sandbox') {
     const id = randomUUID(); const seed = parseInt(randomUUID().slice(0,8),16);
+    if (preset === 'sandbox') {
+      const world = createSandboxWorld(id, seed);
+      if (brief.premise.trim()) world.premise = brief.premise;
+      if (brief.protagonist.trim()) world.entities.rowan.description = brief.protagonist;
+      if (brief.tone.trim()) world.style.ambience = brief.tone;
+      const session = this.repository.createWorld(world, world.actorIds[0], mode === 'live' ? 'Prompt sandbox (live DM)' : 'Authored sandbox (live DM available)');
+      this.onWorldCreated(world);
+      return { session, ...this.snapshot(id, session.token) };
+    }
     const world = mode === 'live' ? await generateAdventure(this.model,brief,id,seed) : preset === 'dungeon' ? createDungeonWorld(id,seed) : createHouseWorld(id,seed);
     const source = mode === 'live' ? 'Live AI adventure' : 'Authored chapter';
     const session = this.repository.createWorld(world,world.actorIds[0],source);
@@ -101,6 +112,11 @@ export class GameService {
   dm(worldId: string, token: string, input: DMRequest) {
     const request = DMRequestSchema.parse(input);
     return this.mutate(worldId,token,request,{route:'dm',text:request.text,targetId:request.targetId},async(world,member)=>{
+      if (world.sandbox?.enabled) {
+        const result = await resolveSandboxPrompt(this.model, world, member.actorId, request.text, request.targetId);
+        if (!result.ok) throw new Error(result.error.message);
+        return result;
+      }
       const view = projectWorld(world,member.actorId);
       const location = view.entities[member.actorId].location;
       const nearbyNpcDialogue = Object.values(view.entities).filter(entity => entity.kind === 'npc' && location && entity.location && entity.location.mapId === location.mapId && Math.abs(entity.location.x-location.x) + Math.abs(entity.location.y-location.y) <= 8).map(entity => ({speakerId:entity.id,dialogue:world.entities[entity.id].dialogue}));
