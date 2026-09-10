@@ -1,5 +1,7 @@
 # Social Reactions And Expressive Events Implementation Plan
 
+Status: retained component plan, superseded as the first delivery milestone by the freeform sandbox direction approved September 10. See the spec's "Freeform By Default" section. Do not use this narrow slice to claim the dynamic mechanics harness is complete.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Let an open-ended social intention such as kissing the sentinel produce a validated, persistent NPC reaction and structured emoji, sound, and VFX cues.
@@ -8,7 +10,7 @@
 
 **Tech Stack:** Existing TypeScript, Zod, Node, SQLite, Vitest, and Claude Code transport. No new generation provider is required for built-in emotes, sounds, or VFX.
 
-**Spec:** `docs/superpowers/specs/2026-09-10-dynamic-mechanics-reactions-design.md`, especially First Delivery: Social Actions And Expressive Feedback.
+**Spec:** `docs/superpowers/specs/2026-09-10-dynamic-mechanics-reactions-design.md`, especially Freeform By Default and Social Actions And Expressive Feedback.
 
 ## Global Constraints
 

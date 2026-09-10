@@ -1,6 +1,6 @@
 # AI-Authored Mechanics, Reactions, And Fast Visuals
 
-Status: expanded design for user review; not yet implemented.
+Status: freeform-by-default direction approved September 10; broader harness not yet implemented. This document supersedes earlier quest-first and character-gating assumptions.
 
 ## Intent
 
@@ -15,6 +15,20 @@ Examples to support:
 - A player transforms into a demon form: the in-world representation, portrait, profile icon, and allowed form abilities update coherently without replacing the player's identity.
 
 These examples are adventure rules, not universal physical or biological claims. Different worlds may define different reactions.
+
+## Freeform By Default
+
+The user explicitly chose unrestricted creative play as the default. Accept any gameplay intention for DM interpretation; do not reject it merely because it names a new form, ability, material, object, social verb, or story direction. No class unlock, prerequisite quest, established personality, genre convention, or protected solution path is required for a player-requested invention. Stricter adventure rules are opt-in, not the default. Character history informs reactions and dialogue rather than policing the player's choices.
+
+When an intention needs missing mechanics, the DM authors the definitions and resolves the action in one validated transaction where possible. "I become a dragon and breathe fire forward" must change the character's form, grant an actual fire ability, and apply its directional effects to the world, not substitute a refusal, an unlock quest, narration alone, or a mandatory named enemy. Saved facing determines "forward"; movement updates facing, and an explicit direction can override it. Walls, affected objects, and downstream reactions resolve through canonical simulation rules.
+
+Freeform means open-ended intentions and authoring, not unrestricted server execution or guaranteed outcomes. NPCs can respond according to their own state. Clients cannot forge world outcomes, edit credentials, or control another player's identity. Technical bounds prevent infinite reactions and unbounded computation; they must not become arbitrary gameplay restrictions such as "only mundane objects" or "only these six abilities." If an intention cannot yet be expressed by supported primitives, return a specific capability gap and a concrete supported alternative without claiming the original action happened.
+
+The default world is a persistent reactive sandbox. An opening motivation provides context through characters, not a mandatory quest chain. Objectives are optional story threads arising from committed interactions, with causal event references and tracked resolutions. Merge related consequences into existing threads; do not generate a new task for every action. Players may ignore, change, complete, or invalidate a thread without freezing the world. Record the changed situation instead of protecting quest objects from gameplay or silently restoring a required solution.
+
+World generation prioritizes things to do over quest count: reachable characters, portable objects, usable fixtures, materials with reactions, and spatial combinations. Every initial room must have multiple non-quest interactions with persistent effects. Generated objects should expose meaningful affordances, not just inspection text. Discover consequences through play and NPC responses.
+
+The next integrated acceptance scenario is a small, dense sandbox: transform into a dragon; breathe fire forward across multiple eligible objects; extinguish it with water; spread it with authored wind; transform a cookable entity; interact socially with a witness; observe persistent memories, synchronized appearance, and emoji/SFX/VFX cues. A resulting story opportunity is optional, grounded in those actual events, and does not stop further play. This takes priority over delivering another isolated hardcoded ability or a quest-only chapter.
 
 ## Architectural Choice
 
@@ -40,7 +54,7 @@ Definitions have stable IDs, immutable versions, content hashes, provenance, and
 
 Activation is a server transaction with an expected world/registry revision and idempotency key. Validate the entire dependency bundle, including any new output item, before activation. Persist the definitions, activation event, and updated world together. Conflicting updates reject. Prior versions remain available for replay; replacing a rule never rewrites earlier events.
 
-World generation can submit a complete rules bundle. During play, a DM proposal may install definitions and execute the triggering action in the same validated atomic batch. Player clients cannot directly grant themselves abilities or install rules. The DM's authoring permissions, world budgets, protected entities, and objective constraints still apply.
+World generation can submit a complete rules bundle. During play, a DM proposal may install definitions and execute the triggering action in the same validated atomic batch. Player clients cannot directly grant themselves abilities or install rules; their freeform requests go through the authorized DM authoring path. Technical budgets, actor ownership, and state integrity still apply. Quest relevance and existing character abilities are not default authoring restrictions.
 
 AI-generated changes apply within one world by default. Sharing content with a global library is a separate reviewed promotion operation, not a side effect of one session's DM.
 
@@ -58,7 +72,7 @@ Initial primitives should cover:
 
 Abilities compose these primitives with a targeting contract, character requirements, resource costs, range, and cooldown. Statuses compose supported modifiers rather than arbitrary property setters. Unknown primitive names reject with a structured capability-gap report that the DM can use to revise its proposal.
 
-Limits are explicit and independent of prose: maximum targets, range, spawn count, damage, duration, scheduled work, and rule evaluations. Protected actors, ownership, membership, required quest references, and canonical identifiers cannot be overwritten by definition data.
+Limits are explicit and independent of prose: maximum targets, range, spawn count, damage, duration, scheduled work, and rule evaluations. Ownership, membership, and canonical identifiers cannot be overwritten by definition data. Quest references must remain historically valid when their targets change or disappear; this does not make quest targets invulnerable.
 
 ## Reactions
 
@@ -118,7 +132,7 @@ Rule changes affect future triggers. Existing unresolved actions can include a r
 
 Use an explicit transform primitive rather than arbitrary entity replacement. For the cooking example, preserve stable entity identity and location while changing its definition and permitted gameplay state. Record prior and new definition versions in the event so memory and provenance survive.
 
-Every transform declares inventory handling: preserve only when compatible, otherwise spill contents to validated positions or reject. Do not silently delete held items. Clear incompatible AI intent/abilities/statuses according to a validated transformation policy. Relationships and historical references must not become dangling pointers. Player actors and protected objective sources cannot be transformed by an ordinary environmental rule.
+Every transform declares inventory handling: preserve only when compatible, otherwise spill contents to validated positions or reject. Do not silently delete held items. Clear incompatible AI intent/abilities/statuses according to a validated transformation policy. Relationships and historical references must not become dangling pointers. Player actors use the identity-preserving character-form path, not destructive item conversion. Objective sources may transform; update the affected story thread instead of prohibiting the transformation.
 
 Validate the output definition before consuming or transforming the input. A missing visual is allowed; a missing gameplay definition is not. Repeated delivery of the same action/reaction cannot produce duplicate roasted items.
 
@@ -145,10 +159,10 @@ Suggested public tool surface:
 | `readWorld` / `inspectEntity` | Read authorized actor-visible state and affordances, with a revision. No generic secret-bearing database access. |
 | `defineEntity` / `defineAbility` / `defineReaction` | Propose versioned data definitions using available primitives. Return validated handles or precise rejection. |
 | `performAction` | Submit a typed intention through the deterministic engine, never an arbitrary state patch. |
-| `addAbilities` | Grant installed abilities when the story/progression/form policy permits; no unrestricted player self-grants. |
+| `addAbilities` | Grant installed abilities through the authorized DM path, including abilities invented at the player's request. No default progression gate; clients cannot forge grants. |
 | `transformCharacter` | Apply/revert a validated form and its coherent appearance bundle. Preserve actor identity and persistent history. |
 | `updateCharacter` | Update explicitly allowed profile fields through typed sections, not arbitrary property paths. Mechanical changes use their dedicated commands. |
-| `createStoryQuest` | Propose a validated story objective/beat with references and completion conditions. Preserve one clear primary goal; additional content does not silently replace it or multiply mandatory quests. |
+| `createStoryQuest` | Create or update an optional story thread grounded in committed events, with valid references and resolution conditions. Merge related consequences; never impose a mandatory quest chain or end the sandbox on completion. |
 | `narrate` / `talk` / `think` | Commit appropriately scoped dialogue referring to real events. Thoughts remain actor-private. |
 | `tts` | Request narration/dialogue audio for an authorized committed dialogue ID, with a speaker/voice version. Does not establish game facts or replay audio globally on reconnect. |
 | `createSvg` / `createImage` | Request visual artifacts with an appearance/asset version, style, purpose, references, and fallback. Return a cached asset or persistent job handle, not a world mutation. |
@@ -178,7 +192,7 @@ Key audio by committed text, speaker/voice version, language, and synthesis sett
 ### Demon Transformation Example
 
 1. Install a validated demon form and any new abilities/reactions it references.
-2. Check that the actor can acquire that form under the world's current rules.
+2. Validate the definition and actor authorization. A player-requested form is permitted by default without a prerequisite quest or class unlock.
 3. Apply the form, its gameplay grants/modifiers, and the matching model/portrait/icon fallback bundle in one commit.
 4. Emit a transformation event consumed by every connected client's world, profile, and dialogue surfaces.
 5. Request missing visual variants and optional committed speech audio in the background, sharing one appearance description/reference set.
@@ -186,7 +200,7 @@ Key audio by committed text, speaker/voice version, language, and synthesis sett
 
 This supports a rich harness without making a tool call equivalent to permission to change any backend field.
 
-## First Delivery: Social Actions And Expressive Feedback
+## Social Actions And Expressive Feedback
 
 The existing engine cannot resolve an action such as kissing the sentinel into a changed relationship or emotional state. Its DM prompt disallows claiming unsupported actions happened, and its available command schema lacks a social-outcome operation. More creative prompting alone cannot fix that missing state transition.
 
@@ -249,7 +263,7 @@ Coordinate additive contract changes with the separate UI/SDK agent. Supply fixt
 
 ## Delivery Boundaries
 
-0. First working slice: social outcomes, attributed NPC memories, and emoji/SFX/VFX event primitives. This addresses the currently blocked player interaction before the broader authoring system is delivered.
+0. First integrated milestone: the freeform sandbox scenario above. Build its mechanics in testable increments, but do not call the milestone complete after only social outcomes or a fixed dragon ability. The existing social-first plan is a reusable component plan, not the delivery priority.
 1. Definition registry, authoring validation, persistence, and compatibility fixtures.
 2. Bounded effect interpreter and reactive trigger resolution; port relevant existing fire/water behavior to the same rule path to avoid double application.
 3. AI generation/DM authoring integration and structured rejection/repair.
@@ -272,6 +286,10 @@ The implementation plan will name exact files and tests after review of this des
 - Transform a player into demon form and revert it: world model, portrait, and icon stay on the same appearance version; inventory, actor identity, and memories survive; form-granted abilities revert correctly.
 - Reject a late demon asset attachment after reversion and preserve historical dialogue speaker versions without mutating the current profile.
 - Exercise tool-loop budgets, unknown tools, typed dependency handles, duplicate calls, transactional media outbox recovery, and unavailable TTS/image providers.
-- Prove profile updates cannot smuggle mechanical or ownership changes, story tools preserve the primary-goal policy, private speech is scoped, and malformed SVG cannot execute code or make network requests.
+- Prove profile updates cannot smuggle mechanical or ownership changes, story tools produce optional causally grounded threads, private speech is scoped, and malformed SVG cannot execute code or make network requests.
 - Resolve kissing the sentinel as a valid context-sensitive social attempt; persist a relevant NPC reaction and memory; retain them across reload; recall the interaction later without forcing reciprocation.
 - Verify emote/SFX/VFX do not mutate mechanics, add simulation ticks, leak private reactions, or replay stale effects on reconnect. Verify positive-gesture farming limits and exact replay of a previously resolved model outcome.
+- Request a previously undefined form and ability without a prerequisite; install and execute them atomically, save/reload, and use the ability again without re-authoring it.
+- Breathe fire forward without naming an enemy: use saved facing, hit the appropriate area, respect walls, and resolve object reactions identically for two clients.
+- Complete, ignore, and invalidate optional story threads; ordinary actions must remain available afterward. Preserve causal history without forcing replacement quests.
+- Verify generated rooms contain reachable non-quest interactions that change persistent state, and that consequences can produce an optional story thread without producing one for every action.
