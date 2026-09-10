@@ -1,0 +1,11 @@
+{
+  "extends": "./tsconfig.json",
+  "include": [
+    "apps/server/**/*.ts",
+    "packages/contracts/**/*.ts",
+    "packages/engine/**/*.ts",
+    "packages/assets/**/*.ts",
+    "scripts/build-assets.ts",
+    "scripts/smoke-*.ts"
+  ]
+}
