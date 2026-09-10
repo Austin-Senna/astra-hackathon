@@ -70,7 +70,7 @@ await service.dm(id, token, {
 - [x] Run a live Claude prompt against an isolated saved sandbox; inspect canonical form/object/NPC changes, then reconnect and replay the request without another resolution.
 - [x] Run full scoped regression tests, backend typecheck, and `git diff --check`.
 - [x] Give the UI agent exact creation/input/state contracts. No claim that new UI controls or presentation cues render until that integration is verified.
-- [ ] Commit only owned changes and normally push to `Austin-Senna/astra-hackathon`.
+- [x] Commit only owned changes and normally push to `Austin-Senna/astra-hackathon` (implementation `6b2301d`).
 
 ## Progress
 

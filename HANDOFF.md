@@ -83,4 +83,6 @@ The backend is local/single-process, not production multiplayer hosting. SQLite 
 
 ## Publication
 
+Prompt sandbox implementation was committed and pushed to `origin/main` as `6b2301d`, with concurrent story/UI work left uncommitted and intact. The implementation plan records completed verification and publication.
+
 Backend implementation was pushed to `main` as `0929e0d`. Check `git log -1`, `git status`, and `origin/main` for later design/UI commits; the requested destination is `Austin-Senna/astra-hackathon`. Never sweep concurrent UI work into a backend commit or reset it away.
