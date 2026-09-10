@@ -8,6 +8,10 @@
 - User explicitly authorized commit and push to `https://github.com/Austin-Senna/astra-hackathon`. Git is initialized on `main`, with that `origin`; the remote was initially empty. Use normal pushes, never force-push.
 - Preserve specs and handoffs across context compaction.
 
+## Next Extension
+
+User approved AI-authored data-defined mechanics above trusted primitives, and added modifiable reactions: fire/water extinguishing, wind spreading fire, chicken transforming to roasted chicken, and fast new output visuals. Expanded design: `docs/superpowers/specs/2026-09-10-dynamic-mechanics-reactions-design.md`. This is a design for review, not implemented functionality. Next step after design review is the implementation plan; coordinate contract changes with the separate UI/SDK agent.
+
 ## Implemented
 
 - Shared Zod contracts with action-specific required fields, world/entity state, events, assets, encounters, session credentials, and synchronization cursors.
@@ -53,4 +57,4 @@ The backend is local/single-process, not production multiplayer hosting. SQLite 
 
 ## Publication
 
-Backend files are staged explicitly on `main`. Check `git log -1`, `git status`, and `origin/main` for the final publication state; the requested destination is `Austin-Senna/astra-hackathon`. Never sweep concurrent UI work into a backend commit or reset it away.
+Backend implementation was pushed to `main` as `0929e0d`. Check `git log -1`, `git status`, and `origin/main` for later design/UI commits; the requested destination is `Austin-Senna/astra-hackathon`. Never sweep concurrent UI work into a backend commit or reset it away.
